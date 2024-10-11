@@ -30,3 +30,20 @@ class RegisterView(APIView):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)  
         
+
+class LoginView(APIView):
+    serializer_class = LoginSerializer 
+    # permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user = serializer.validated_data
+            token = get_tokens_for_user(user)
+            return Response({
+                'user': UserSerializer(user).data,
+                'token': token,
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)

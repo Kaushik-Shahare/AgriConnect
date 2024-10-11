@@ -50,7 +50,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     REQUIRED_FIELDS = ['user_type']
 
     def get_full_name(self):
-        return self.email
+        return self.id
 
     def tokens(self):
         refresh = RefreshToken.for_user(self)
