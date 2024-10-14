@@ -5,7 +5,7 @@ from account.models import User
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User 
-        fields = ['id', 'email', 'user_type', 'name', 'phone', 'address', 'city', 'state', 'country', 'zip']
+        fields = ['id', 'profile_image', 'email', 'user_type', 'name', 'phone', 'address', 'city', 'state', 'country', 'zip']
 
 class QuantityAddedSerializer(serializers.ModelSerializer):
     class Meta:

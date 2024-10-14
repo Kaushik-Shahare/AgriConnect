@@ -36,6 +36,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         ('buyer', 'Buyer'),
     ]
     email = models.EmailField(max_length=255,unique=True, db_index=True)
+    username = models.CharField(max_length=30, unique=True, blank=False)  
+    profile_image = models.URLField(blank=True, null=True)
+    profile_image_public_id = models.CharField(max_length=255, blank=True, null=True)
+
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
@@ -55,10 +59,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     objects = UserManager() 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['user_type']
+    REQUIRED_FIELDS = ['user_type', 'username']
 
     def get_full_name(self):
-        return self.id
+        return self.name or self.username  
+
 
     def tokens(self):
         refresh = RefreshToken.for_user(self)

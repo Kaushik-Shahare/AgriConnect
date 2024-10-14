@@ -4,10 +4,11 @@ from django.contrib.auth import authenticate
 
 
 class UserSerializer(serializers.ModelSerializer):
+    profile_image = serializers.URLField()  
     class Meta:
         model = User
-        fields = ('id', 'email', 'user_type', 'name', 'phone', 'address', 'city', 'state', 'country', 'zip')
-        read_only_fields = ['id', 'user_type', 'email']
+        fields = ('id', 'username', 'profile_image', 'email', 'user_type', 'name', 'phone', 'address', 'city', 'state', 'country', 'zip')
+        read_only_fields = ['id', 'user_type', 'email', 'username']
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -15,10 +16,12 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'password', 'user_type')
+        fields = ('username','email', 'password', 'user_type')
 
     def create(self, validated_data):
+        
         user = User.objects.create_user(
+            username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
             user_type = validated_data.get('user_type')
