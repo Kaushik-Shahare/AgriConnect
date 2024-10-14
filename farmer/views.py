@@ -17,7 +17,6 @@ class ProfileView(APIView):
     def get(self, request):
         try:
             profile = FarmerProfile.objects.get(user=request.user.id)
-            print(profile)
             serializer = self.serializer_class(profile)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:

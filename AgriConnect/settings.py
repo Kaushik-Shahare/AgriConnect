@@ -30,6 +30,7 @@ SECRET_KEY = 'django-insecure-0jw@^u((7q_)=3yln@y-%nh3ku7ghti3+7z@v(^)9vhs&7tbmj
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+CORS_ALLOW_ALL_ORIGINS = True  
 
 
 # Application definition
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     'account',
     'chats',
     'farmer',
+    'crop',
     
 ]
 

@@ -40,7 +40,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES)
     verified = models.BooleanField(default=False)
-    # steps = models.BooleanField(default=False)
+    name = models.CharField(max_length=255, blank=True)
+    phone = models.CharField(max_length=255, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=255, blank=True)
+    state = models.CharField(max_length=255, blank=True)
+    country = models.CharField(max_length=255, blank=True)
+    zip = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     auth_provider = models.CharField(
         max_length=255, blank=False,
         null=False, default=AUTH_PROVIDERS.get('email'))

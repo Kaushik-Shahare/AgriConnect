@@ -22,4 +22,5 @@ urlpatterns = [
     path('api/account/', include('account.urls')),
     path('api/chats/', include('chats.urls')),
     path('api/farmer/', include('farmer.urls')),
+    path('api/crop/', include('crop.urls')),
 ]
