@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
 import cloudinary.uploader
-from .models import Post
-from .serializers import PostSerializer
+from .models import *
+from .serializers import *
 
 class PostView(APIView):
     serializer_class = PostSerializer
@@ -94,3 +94,63 @@ class PostView(APIView):
         
         post.delete()
         return Response({"detail": "Post deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+        
+class LikePostView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+        user = request.user
+        
+        if post.likes.filter(id=user.id).exists():
+            # Unlike the post if the user already liked it
+            post.likes.remove(user)
+            message = "Post unliked."
+        else:
+            # Like the post if the user hasn't already liked it
+            post.likes.add(user)
+            message = "Post liked."
+        
+        return Response({"detail": message}, status=status.HTTP_200_OK)
+
+
+class CommentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+
+    def get(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+
+        comments = post.comments.all()
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # Add a comment
+    def post(self, request, post_id):
+        post = get_object_or_404(Post, id=post_id)
+        request.data['post'] = post.id
+        serializer = CommentSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save(post=post)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Update a comment
+    def put(self, request, post_id, comment_id):
+        post = get_object_or_404(Post, id=post_id)
+        comment = get_object_or_404(Comment, id=comment_id, post=post, user=request.user)
+
+        serializer = CommentSerializer(comment, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    # Delete a comment
+    def delete(self, request, post_id, comment_id):
+        post = get_object_or_404(Post, id=post_id)
+        comment = get_object_or_404(Comment, id=comment_id, post=post, user=request.user)
+        
+        comment.delete()
+        return Response({"detail": "Comment deleted."}, status=status.HTTP_204_NO_CONTENT)
