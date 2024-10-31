@@ -12,4 +12,7 @@ urlpatterns = [
     # Comment-related views
     path('posts/comment/<int:post_id>/', CommentView.as_view()),  # Comment on a post
     path('posts/comment/<int:post_id>/<int:comment_id>/', CommentView.as_view()),  # Update or delete a comment
+
+    # Like/unlike a comment
+    path('posts/comment/like/<int:comment_id>/', LikeCommentView.as_view()),
 ]

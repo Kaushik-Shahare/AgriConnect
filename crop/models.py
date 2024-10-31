@@ -13,7 +13,8 @@ crop_catogory = [
 class Crop(models.Model):
     user = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='crops')
     name = models.CharField(max_length=255)
-    # image = models.ImageField(upload_to='crops/', null=True, blank=True)
+    image_url = models.URLField(blank=True, null=True)  
+    image_public_id = models.CharField(max_length=255, blank=True, null=True)  
     description = models.TextField()
     category = models.CharField(choices=crop_catogory)
     quantity = models.IntegerField()

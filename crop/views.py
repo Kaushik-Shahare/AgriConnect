@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated  # Ensure this import is present
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now, timedelta
+import cloudinary.uploader
 
 
 
@@ -48,6 +49,20 @@ class CropCreate(APIView):
     def post(self, request):
         request.data['user'] = request.user.id  # Set the user id directly
         request.data['quantity_listed'] = request.data['quantity']  # Set the listed quantity to the total quantity
+        image = request.FILES.get("image")
+
+        image_url = None
+        image_public_id = None
+        if image:
+            upload_result = cloudinary.uploader.upload(image, folder="crops")
+            image_url = upload_result.get('url')
+            image_public_id = upload_result.get('public_id')  # Get the public ID
+            print("Uploaded image URL:", image_url)  # Print the URL for debugging
+        
+        request.data['image_url'] = image_url
+        request.data['image_public_id'] = image_public_id
+
+
         serializer = self.serializer_class(data=request.data, context={'request': request})  # Pass context
         serializer.is_valid(raise_exception=True)
         try:
@@ -70,6 +85,21 @@ class CropDetails(APIView):
 
     def put(self, request, pk):
         crop = self.get_object(pk)
+        image = request.FILES.get("image")
+        old_image_public_id = crop.image_public_id
+        
+        if image:
+            upload_result = cloudinary.uploader.upload(image, folder="crops")
+            image_url = upload_result.get('url')
+            image_public_id = upload_result.get('public_id')
+
+            # Delete the old image from Cloudinary
+        request.data['image_url'] = image_url
+        request.data['image_public_id'] = image_public_id
+        
+        if old_image_public_id:
+            cloudinary.uploader.destroy(old_image_public_id)
+        
         serializer = self.serializer_class(crop, data=request.data)
         serializer.is_valid(raise_exception=True)
         try:
@@ -90,6 +120,11 @@ class CropDetails(APIView):
 
     def delete(self, request, pk):
         crop = self.get_object(pk)
+
+        # Delete the image from Cloudinary using the public ID
+        if crop.image_public_id:
+            cloudinary.uploader.destroy(crop.image_public_id)
+            
         crop.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

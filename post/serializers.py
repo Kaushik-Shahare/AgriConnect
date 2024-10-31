@@ -13,12 +13,26 @@ class CommentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Comment
-        fields = ['id', 'content', 'created_at', 'user', 'post']
+        fields = ['id', 'content', 'created_at', 'user', 'post', 'likes']
         read_only_fields = ['id', 'created_at', 'user']
 
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
+
+    def to_representation(self, instance):
+        # Get the default representation
+        representation = super().to_representation(instance)
+        
+        # Add the liked_count to the representation
+        representation['likes_count'] = instance.likes.count()
+
+        if self.context['request'].user in instance.likes.all():
+            representation['liked'] = True
+        else:
+            representation['liked'] = False
+        
+        return representation
 
 class PostSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
@@ -41,5 +55,10 @@ class PostSerializer(serializers.ModelSerializer):
         
         # Add the liked_count to the representation
         representation['likes_count'] = instance.likes.count()
+
+        if self.context['request'].user in instance.likes.all():
+            representation['liked'] = True
+        else:
+            representation['liked'] = False
         
         return representation

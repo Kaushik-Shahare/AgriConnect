@@ -27,7 +27,7 @@ class PostView(APIView):
             # Fetch posts by a specific user in descending order
             posts = Post.objects.filter(user_id=user_id).order_by('-created_at')
     
-        serializer = self.serializer_class(posts, many=True)
+        serializer = self.serializer_class(posts , context={'request': request}, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     # Create a new post
@@ -39,7 +39,7 @@ class PostView(APIView):
         image_url = None
         image_public_id = None
         if image:
-            upload_result = cloudinary.uploader.upload(image)
+            upload_result = cloudinary.uploader.upload(image, folder="posts")
             image_url = upload_result.get('url')
             image_public_id = upload_result.get('public_id')  # Get the public ID
             print("Uploaded image URL:", image_url)  # Print the URL for debugging
@@ -123,7 +123,7 @@ class CommentView(APIView):
         post = get_object_or_404(Post, id=post_id)
 
         comments = post.comments.all()
-        serializer = CommentSerializer(comments, many=True)
+        serializer = CommentSerializer(comments, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     # Add a comment
@@ -154,3 +154,21 @@ class CommentView(APIView):
         
         comment.delete()
         return Response({"detail": "Comment deleted."}, status=status.HTTP_204_NO_CONTENT)
+
+class LikeCommentView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, comment_id):
+        comment = get_object_or_404(Comment, id=comment_id)
+        user = request.user
+        
+        if comment.likes.filter(id=user.id).exists():
+            # Unlike the comment if the user already liked it
+            comment.likes.remove(user)
+            message = "Comment unliked."
+        else:
+            # Like the comment if the user hasn't already liked it
+            comment.likes.add(user)
+            message = "Comment liked."
+        
+        return Response({"detail": message}, status=status.HTTP_200_OK)
