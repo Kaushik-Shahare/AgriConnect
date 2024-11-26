@@ -9,6 +9,8 @@ import cloudinary.uploader
 
 
 
+
+
 from .models import Crop
 from .serializers import * 
 from account.models import User
@@ -83,7 +85,32 @@ class CropDetails(APIView):
         serializer = self.serializer_class(crop)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def put(self, request, pk):
+    # def put(self, request, pk):
+    #     crop = self.get_object(pk)
+    #     image = request.FILES.get("image")
+    #     old_image_public_id = crop.image_public_id
+        
+    #     if image:
+    #         upload_result = cloudinary.uploader.upload(image, folder="crops")
+    #         image_url = upload_result.get('url')
+    #         image_public_id = upload_result.get('public_id')
+
+    #     request.data['image_url'] = image_url
+    #     request.data['image_public_id'] = image_public_id
+        
+    #     # Delete the old image from Cloudinary
+    #     if old_image_public_id:
+    #         cloudinary.uploader.destroy(old_image_public_id)
+        
+    #     serializer = self.serializer_class(crop, data=request.data)
+    #     serializer.is_valid(raise_exception=True)
+    #     try:
+    #         serializer.save()
+    #         return Response(serializer.data, status=status.HTTP_200_OK)
+    #     except Exception as e:
+    #         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def patch(self, request, pk):
         crop = self.get_object(pk)
         image = request.FILES.get("image")
         old_image_public_id = crop.image_public_id
@@ -93,23 +120,14 @@ class CropDetails(APIView):
             image_url = upload_result.get('url')
             image_public_id = upload_result.get('public_id')
 
-            # Delete the old image from Cloudinary
         request.data['image_url'] = image_url
         request.data['image_public_id'] = image_public_id
         
+        # Delete the old image from Cloudinary
         if old_image_public_id:
             cloudinary.uploader.destroy(old_image_public_id)
+ 
         
-        serializer = self.serializer_class(crop, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        try:
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    def patch(self, request, pk):
-        crop = self.get_object(pk)
         serializer = self.serializer_class(crop, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         try:
@@ -127,6 +145,24 @@ class CropDetails(APIView):
             
         crop.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+class CropListByCategory(APIView):
+    serializer_class = CropSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, category):
+        crops = Crop.objects.filter(category=category)
+        serializer = self.serializer_class(crops, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+# class CropListByDiet(APIView):
+#     serializer_class = CropSerializer
+#     permission_classes = [IsAuthenticated]
+    
+#     def get(self, request, diet):
+#         crops = Crop.objects.filter(category=diet)
+#         serializer = self.serializer_class(crops, many=True)
+#         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class AddCropQuantity(APIView):
     serializer_class = CropSerializer
@@ -233,3 +269,55 @@ class ProductSalesAnalysisView(APIView):
             "total_sales": total_sales,
             "product_sales": product_sales,
         })
+
+
+class SearchRecommendations(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CropSerializer
+
+    def get(self, request):
+        user = request.user
+        query = request.query_params.get('query')
+
+        # Retrieve crops matching the query
+        crops = Crop.objects.filter(name__icontains=query)
+        serializer = self.serializer_class(crops, many=True)
+
+        # Initialize `results` as a list to store recommendations
+        results = []
+
+        # Add crop recommendations
+        for crop in crops:
+            results.append({
+                "name": crop.name,
+                "source": "crop"
+            })
+
+        # Retrieve search history older than 30 days
+        search_history = SearchHistory.objects.filter(user=user, search_date__gte=now() - timedelta(days=30))
+        for search in search_history:
+            results.append({
+                "name": search.search_query,
+                "source": "searchHistory"
+            })
+
+        return Response(results, status=status.HTTP_200_OK)
+
+class SearchCrops(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CropSerializer
+
+    def get(self, request):
+        query = request.query_params.get('query')
+        query = request.query_params.get('filter')
+        if filter:
+            minPrice = filter.minPrice
+            maxPrice = filter.maxPrice
+            category = filter.category
+            crops = Crop.objects.filter(name__icontains=query, price__gte=minPrice, price__lte=maxPrice, category=category)
+        else:
+            crops = Crop.objects.filter(name__icontains=query)
+
+        SearchHistory.objects.create(user=request.user, search_query=query)
+        serializer = self.serializer_class(crops, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

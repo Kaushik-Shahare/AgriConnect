@@ -7,6 +7,11 @@ crop_catogory = [
     ('fruit', 'Fruit'),
     ('grain', 'Grain'),
     ('dairy', 'Dairy'),
+    ('meat', 'Meat'),
+    ('poultry', 'Poultry'),
+    ('seafood', 'Seafood'),
+    ('herb', 'Herb'),
+    ('spice', 'Spice'),
     ('other', 'Other'),
 ]
 
@@ -43,3 +48,11 @@ class Sales(models.Model):
     
     def __str__(self):
         return f'{self.crop.name} - {self.quantity_sold}kg sold on {self.sale_date}'
+
+class SearchHistory(models.Model):
+    user = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='search_history')
+    search_query = models.CharField(max_length=255)
+    search_date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'{self.search_query} searched on {self.search_date}'
