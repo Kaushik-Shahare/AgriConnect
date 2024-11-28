@@ -280,7 +280,7 @@ class SearchRecommendations(APIView):
         query = request.query_params.get('query')
 
         # Retrieve crops matching the query
-        crops = Crop.objects.filter(name__icontains=query)
+        crops = Crop.objects.filter(name__icontains=query).distinct('name')
         serializer = self.serializer_class(crops, many=True)
 
         # Initialize `results` as a list to store recommendations
@@ -294,7 +294,7 @@ class SearchRecommendations(APIView):
             })
 
         # Retrieve search history older than 30 days
-        search_history = SearchHistory.objects.filter(user=user, search_date__gte=now() - timedelta(days=30))
+        search_history = SearchHistory.objects.filter(user=user, search_query__icontains=query, search_date__gte=now() - timedelta(days=30)).distinct('search_query')
         for search in search_history:
             results.append({
                 "name": search.search_query,
@@ -308,16 +308,39 @@ class SearchCrops(APIView):
     serializer_class = CropSerializer
 
     def get(self, request):
-        query = request.query_params.get('query')
-        query = request.query_params.get('filter')
-        if filter:
-            minPrice = filter.minPrice
-            maxPrice = filter.maxPrice
-            category = filter.category
-            crops = Crop.objects.filter(name__icontains=query, price__gte=minPrice, price__lte=maxPrice, category=category)
-        else:
-            crops = Crop.objects.filter(name__icontains=query)
+        query = request.query_params.get('query', '').strip()
+        min_price = request.query_params.get('min_price')
+        max_price = request.query_params.get('max_price')
+        category = request.query_params.get('category', '').strip()
 
-        SearchHistory.objects.create(user=request.user, search_query=query)
+        # Validate and parse filter values
+        filters = {}
+        if min_price:
+            try:
+                filters['price__gte'] = float(min_price)
+            except ValueError:
+                return Response(
+                    {"error": "Invalid value for min_price"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        if max_price:
+            try:
+                filters['price__lte'] = float(max_price)
+            except ValueError:
+                return Response(
+                    {"error": "Invalid value for max_price"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        if category:
+            filters['category'] = category
+
+        # Query the database
+        crops = Crop.objects.filter(name__icontains=query, **filters) if query else Crop.objects.filter(**filters)
+
+
+        # Save search history only if there's a valid query
+        if query != '':
+            SearchHistory.objects.create(user=request.user, search_query=query)
+
         serializer = self.serializer_class(crops, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

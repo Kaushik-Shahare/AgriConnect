@@ -52,8 +52,8 @@ INSTALLED_APPS = [
     'chats',
     'farmer',
     'crop',
-    'post'
-    
+    'post',
+    'cart',
 ]
 
 SITE_ID = 1
@@ -138,10 +138,10 @@ ASGI_APPLICATION = 'AgriConnect.asgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        "HOST": os.getenv('LOCAL_DATABASE_HOST'),
-        'NAME': os.getenv('LOCAL_DATABASE_NAME'),
-        'USER': os.getenv('LOCAL_DATABASE_USER'),
-        'PASSWORD': os.getenv('LOCAL_DATABASE_PASSWORD'),
+        "HOST": os.getenv('DATABASE_HOST'),
+        'NAME': os.getenv('DATABASE_NAME'),
+        'USER': os.getenv('DATABASE_USER'),
+        'PASSWORD': os.getenv('DATABASE_PASSWORD'),
         'PORT': 5432
     }
 }

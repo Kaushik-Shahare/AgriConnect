@@ -42,6 +42,8 @@ class CropCreateSerializer(serializers.ModelSerializer):
         if crop:
             raise serializers.ValidationError('You have already listed this crop. Please update the quantity instead.')
 
+        
+
         # Create a new crop entry
         crop = Crop.objects.create(**validated_data)
 

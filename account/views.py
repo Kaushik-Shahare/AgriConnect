@@ -74,7 +74,7 @@ class ProfileView(APIView):
 
             # Upload the new image to Cloudinary
             try:
-                cloudinary_response = cloudinary.uploader.upload(new_profile_image)
+                cloudinary_response = cloudinary.uploader.upload(new_profile_image, folder='profile_images')
                 profile_image_url = cloudinary_response.get('secure_url')  
                 profile_image_public_id = cloudinary_response.get('public_id')  
 
