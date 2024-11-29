@@ -234,7 +234,7 @@ class ProductSalesAnalysisView(APIView):
         sales = Sales.objects.filter(crop__user__id=request.user.id, sale_date__gte=time_threshold)
 
         # Total revenue and total sales for the time period
-        total_revenue = sum(sale.price_at_sale * sale.quantity_sold for sale in sales)
+        total_revenue = sum(sale.price_at_sale for sale in sales)
         total_sales = sales.count()
 
         # Product listing with sales info
