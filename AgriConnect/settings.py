@@ -33,7 +33,7 @@ SECRET_KEY = 'django-insecure-0jw@^u((7q_)=3yln@y-%nh3ku7ghti3+7z@v(^)9vhs&7tbmj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['https://agriconnect.kaushikshahare.com/', 'http://localhost:3000']
 CORS_ALLOW_ALL_ORIGINS = True  
 
 
