@@ -114,14 +114,13 @@ class CropDetails(APIView):
         crop = self.get_object(pk)
         image = request.FILES.get("image")
         old_image_public_id = crop.image_public_id
-        
+
         if image:
             upload_result = cloudinary.uploader.upload(image, folder="crops")
             image_url = upload_result.get('url')
             image_public_id = upload_result.get('public_id')
-
-        request.data['image_url'] = image_url
-        request.data['image_public_id'] = image_public_id
+            request.data['image_url'] = image_url
+            request.data['image_public_id'] = image_public_id
         
         # Delete the old image from Cloudinary
         if old_image_public_id:
@@ -129,11 +128,14 @@ class CropDetails(APIView):
  
         
         serializer = self.serializer_class(crop, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         try:
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as e:
+            print(e)
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):

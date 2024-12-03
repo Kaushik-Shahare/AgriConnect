@@ -35,6 +35,7 @@ DEBUG = False
 
 ALLOWED_HOSTS = [
     'agri-connect-delta.vercel.app',
+    'agri-connect-aw9ly5f4b-kaushik-shahares-projects.vercel.app',
     'agriconnect.kaushikshahare.com',
     'localhost',
 ]

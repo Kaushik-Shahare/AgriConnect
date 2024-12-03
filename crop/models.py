@@ -5,6 +5,7 @@ from django.db import models
 crop_catogory = [
     ('vegetable', 'Vegetable'),
     ('fruit', 'Fruit'),
+    ('cereal', 'Cereal'),
     ('grain', 'Grain'),
     ('dairy', 'Dairy'),
     ('meat', 'Meat'),
