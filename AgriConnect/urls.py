@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/crop/', include('crop.urls')),
     path('api/post/', include('post.urls')),
     path('api/cart/', include('cart.urls')),
+    path('api/ai-assistant/', include('ai_assistant.urls')),
 ]
