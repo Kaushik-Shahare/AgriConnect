@@ -23,6 +23,11 @@ class CropSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
+
+        avg_rating = instance.ratings.aggregate(models.Avg('rating'))['rating__avg']
+        number_of_ratings = instance.ratings.count()
+        representation['average_rating'] = avg_rating if avg_rating else 0
+        representation['number_of_ratings'] = number_of_ratings
         return representation
 
 class CropCreateSerializer(serializers.ModelSerializer):
@@ -82,3 +87,22 @@ class SalesSerializer(serializers.ModelSerializer):
         return sale
 
         
+
+class RatingSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+    class Meta:
+        model = Rating
+        fields = '__all__'
+
+    def create(self, validated_data):
+        # Fetching the crop from context rather than validated_data
+        crop = self.context['crop']
+
+        if crop.user == self.context['request'].user:
+            raise serializers.ValidationError('You cannot rate your own crop.')
+
+        validated_data['user'] = self.context['request'].user
+        validated_data['crop'] = crop
+
+        rating = Rating.objects.create(**validated_data)
+        return rating

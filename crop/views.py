@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated  # Ensure this import is present
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now, timedelta
+import cloudinary   
 import cloudinary.uploader
 
 
@@ -122,9 +123,9 @@ class CropDetails(APIView):
             request.data['image_url'] = image_url
             request.data['image_public_id'] = image_public_id
         
-        # Delete the old image from Cloudinary
-        if old_image_public_id:
-            cloudinary.uploader.destroy(old_image_public_id)
+            # Delete the old image from Cloudinary
+            if old_image_public_id:
+                cloudinary.uploader.destroy(old_image_public_id)
  
         
         serializer = self.serializer_class(crop, data=request.data, partial=True)
@@ -346,3 +347,87 @@ class SearchCrops(APIView):
 
         serializer = self.serializer_class(crops, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+        
+class RateCrop(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RatingSerializer
+    
+    def get(self, request, pk):
+        crop = get_object_or_404(Crop, pk=pk)
+        ratings = Rating.objects.filter(crop=crop)
+        serializer = self.serializer_class(ratings, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, pk):
+        crop = get_object_or_404(Crop, pk=pk)
+        request.data['crop'] = crop.id
+        request.data['user'] = request.user.id
+        image = request.FILES.get("image")
+
+        image_url = None
+        image_public_id = None
+        if image:
+            upload_result = cloudinary.uploader.upload(image, folder="crops-ratings")
+            image_url = upload_result.get('url')
+            image_public_id = upload_result.get('public_id')  # Get the public ID
+            print("Uploaded image URL:", image_url)  # Print the URL for debugging
+        
+        request.data['image_url'] = image_url
+        request.data['image_public_id'] = image_public_id
+
+        serializer = self.serializer_class(data=request.data, context={'crop': crop, 'request': request})
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+class RatingDetailsView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RatingSerializer
+    
+    def get(self, request, pk):
+        rating = get_object_or_404(Rating, pk=pk)
+        serializer = self.serializer_class(rating)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        rating = get_object_or_404(Rating, pk=pk)
+        request.data['crop'] = rating.crop.id
+
+        if rating.user != request.user:
+            return Response({'error': 'You do not have permission to edit this rating'}, status=status.HTTP_403_FORBIDDEN)
+        
+        image = request.FILES.get("image")
+        
+        old_image_public_id = rating.image_public_id
+
+        if image:
+            upload_result = cloudinary.uploader.upload(image, folder="crops-ratings")
+            image_url = upload_result.get('url')
+            image_public_id = upload_result.get('public_id')
+            request.data['image'] = image_url
+            request.data['image_public_id'] = image_public_id
+
+            # Delete the old image from Cloudinary
+            if old_image_public_id:
+                cloudinary.uploader.destroy(old_image_public_id)
+            
+            
+        serializer = self.serializer_class(rating, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def delete(self, request, pk):
+        rating = get_object_or_404(Rating, pk=pk)
+
+        if rating.user != request.user:
+            return Response({'error': 'You do not have permission to delete this rating'}, status=status.HTTP_403_FORBIDDEN)
+
+        # Delete the image from Cloudinary using the public ID
+        if rating.image_public_id:
+            cloudinary.uploader.destroy(rating.image_public_id)
+            
+        rating.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

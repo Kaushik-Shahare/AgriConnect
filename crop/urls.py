@@ -19,4 +19,9 @@ urlpatterns = [
     # Search crops
     path('search/recommendations/', SearchRecommendations.as_view(), name='crop-recommendations'),
     path('search/', SearchCrops.as_view(), name='search-crops'),
+
+    
+    # Ratings
+    path('ratings/<int:pk>/', RateCrop.as_view(), name='rate-crop'),
+    path('rate/<int:pk>/', RatingDetailsView.as_view(), name='rate-details'),
 ]

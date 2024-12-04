@@ -1,4 +1,6 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 # Create your models here.
 
@@ -57,3 +59,18 @@ class SearchHistory(models.Model):
     
     def __str__(self):
         return f'{self.search_query} searched on {self.search_date}'
+
+        
+class Rating(models.Model):
+    user = models.ForeignKey('account.User', on_delete=models.CASCADE, related_name='ratings')
+    crop = models.ForeignKey(Crop, on_delete=models.CASCADE, related_name='ratings')
+    rating = models.FloatField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)]
+    )
+    comment = models.TextField()
+    image = models.URLField(blank=True, null=True)
+    image_public_id = models.CharField(max_length=255, blank=True, null=True)
+    rating_date = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'{self.rating} stars on {self.rating_date}'
