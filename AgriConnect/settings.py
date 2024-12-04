@@ -34,14 +34,13 @@ SECRET_KEY = 'django-insecure-0jw@^u((7q_)=3yln@y-%nh3ku7ghti3+7z@v(^)9vhs&7tbmj
 DEBUG = False
 
 ALLOWED_HOSTS = [
-    'agri-connect-delta.vercel.app',
-    'agri-connect-aw9ly5f4b-kaushik-shahares-projects.vercel.app',
+    'api-agriconnect.kaushikshahare.com',
     'agriconnect.kaushikshahare.com',
     'localhost',
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'https://agri-connect-delta.vercel.app',
+    'https://api-agriconnect.kaushikshahare.com',
     "https://agriconnect.kaushikshahare.com",
     "http://localhost:3000",
 ]
