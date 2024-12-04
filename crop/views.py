@@ -8,13 +8,16 @@ from django.utils.timezone import now, timedelta
 import cloudinary   
 import cloudinary.uploader
 
-
-
-
-
 from .models import Crop
 from .serializers import * 
 from account.models import User
+
+from rest_framework.pagination import PageNumberPagination
+
+class CropPagination(PageNumberPagination):
+    page_size = 10  # Default number of items per page
+    page_size_query_param = 'page_size'  # Allow clients to control the page size
+    max_page_size = 50  # Limit the maximum page size
 
 # Create your views here.
 
@@ -309,6 +312,8 @@ class SearchRecommendations(APIView):
 class SearchCrops(APIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CropSerializer
+    pagination_class = CropPagination
+
 
     def get(self, request):
         query = request.query_params.get('query', '').strip()
@@ -338,15 +343,23 @@ class SearchCrops(APIView):
             filters['category'] = category
 
         # Query the database
-        crops = Crop.objects.filter(name__icontains=query, **filters) if query else Crop.objects.filter(**filters)
+        # TODO: if none field are defined the query goes undefinitly
+        crops = Crop.objects.filter(name__icontains=query, **filters).order_by('name') if query else Crop.objects.filter(**filters).order_by('name')
+
 
 
         # Save search history only if there's a valid query
         if query != '':
-            SearchHistory.objects.create(user=request.user, search_query=query)
+            if not SearchHistory.objects.filter(user=request.user, search_query=query).exists():
+                SearchHistory.objects.create(user=request.user, search_query=query)
 
         serializer = self.serializer_class(crops, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # Apply pagination
+        paginator = self.pagination_class()
+        paginated_crops = paginator.paginate_queryset(crops, request)
+        serializer = self.serializer_class(paginated_crops, many=True)
+        return paginator.get_paginated_response(serializer.data )
 
         
 class RateCrop(APIView):
