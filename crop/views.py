@@ -28,7 +28,8 @@ class CropList(APIView):
     
     def get(self, request, user_id=None):
         if user_id is None:
-            crops = Crop.objects.all()
+            # only fetch first 5 crops
+            crops = Crop.objects.filter(updated_at__gte=now() - timedelta(days=365))[:5]
         else:
             crops = Crop.objects.filter(user_id=user_id)
         serializer = self.serializer_class(crops, many=True)
