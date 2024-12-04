@@ -68,7 +68,7 @@ class Rating(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)]
     )
     comment = models.TextField()
-    image = models.URLField(blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True)
     image_public_id = models.CharField(max_length=255, blank=True, null=True)
     rating_date = models.DateTimeField(auto_now_add=True)
     

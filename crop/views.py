@@ -368,28 +368,36 @@ class RateCrop(APIView):
     
     def get(self, request, pk):
         crop = get_object_or_404(Crop, pk=pk)
-        ratings = Rating.objects.filter(crop=crop)
+        ratings = Rating.objects.filter(crop=crop).order_by('-rating_date')
         serializer = self.serializer_class(ratings, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def post(self, request, pk):
         crop = get_object_or_404(Crop, pk=pk)
-        request.data['crop'] = crop.id
-        request.data['user'] = request.user.id
-        image = request.FILES.get("image")
 
+        # Create a mutable copy of the request data
+        data = request.data.copy()
+
+        # Update the mutable copy
+        data['crop'] = pk
+        data['user'] = request.user.id
+
+        image = request.FILES.get("image")
         image_url = None
         image_public_id = None
+
         if image:
             upload_result = cloudinary.uploader.upload(image, folder="crops-ratings")
             image_url = upload_result.get('url')
             image_public_id = upload_result.get('public_id')  # Get the public ID
-            print("Uploaded image URL:", image_url)  # Print the URL for debugging
-        
-        request.data['image_url'] = image_url
-        request.data['image_public_id'] = image_public_id
+            print("Uploaded image URL:", image_url)  # Debugging log
 
-        serializer = self.serializer_class(data=request.data, context={'crop': crop, 'request': request})
+        # Add the image data to the mutable copy
+        data['image_url'] = image_url
+        data['image_public_id'] = image_public_id
+
+        # Pass the mutable data to the serializer
+        serializer = self.serializer_class(data=data, context={'crop': crop, 'request': request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         serializer.save()
@@ -406,7 +414,9 @@ class RatingDetailsView(APIView):
 
     def put(self, request, pk):
         rating = get_object_or_404(Rating, pk=pk)
-        request.data['crop'] = rating.crop.id
+
+        data = request.data.copy()
+        data['crop'] = rating.crop.id
 
         if rating.user != request.user:
             return Response({'error': 'You do not have permission to edit this rating'}, status=status.HTTP_403_FORBIDDEN)
@@ -419,15 +429,15 @@ class RatingDetailsView(APIView):
             upload_result = cloudinary.uploader.upload(image, folder="crops-ratings")
             image_url = upload_result.get('url')
             image_public_id = upload_result.get('public_id')
-            request.data['image'] = image_url
-            request.data['image_public_id'] = image_public_id
+            data['image_url'] = image_url
+            data['image_public_id'] = image_public_id
 
             # Delete the old image from Cloudinary
             if old_image_public_id:
                 cloudinary.uploader.destroy(old_image_public_id)
             
             
-        serializer = self.serializer_class(rating, data=request.data)
+        serializer = self.serializer_class(rating, data=data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
