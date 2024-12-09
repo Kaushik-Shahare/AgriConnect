@@ -31,17 +31,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-0jw@^u((7q_)=3yln@y-%nh3ku7ghti3+7z@v(^)9vhs&7tbmj'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = [
     'api-agriconnect.kaushikshahare.com',
     'agriconnect.kaushikshahare.com',
+    'agriconnect-1ast.onrender.com',
     'localhost',
 ]
 
 CORS_ALLOWED_ORIGINS = [
     'https://api-agriconnect.kaushikshahare.com',
     "https://agriconnect.kaushikshahare.com",
+    "https://agriconnect-1ast.onrender.com",
     "http://localhost:3000",
 ]
 
