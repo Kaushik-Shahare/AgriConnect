@@ -1,5 +1,7 @@
 # AgriConnect
 
+## Frontend Git Repo [Link](https://github.com/Kaushik-Shahare/AgriConnect-Frontend)
+
 ## Description
 
 AgriConnect is a web application that connects farmers to buyers. It allows farmers to post their products and buyers to view and purchase them. The application also provides a platform for farmers to share their experiences and knowledge with other farmers. The application is built using Django, a high-level Python web framework, and PostgreSQL, a powerful open-source relational database system.
