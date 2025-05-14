@@ -230,25 +230,48 @@ class ProductSalesAnalysisView(APIView):
     def get(self, request, period):
         if period == '1day':
             time_threshold = now() - timedelta(days=1)
+            prev_time_threshold = now() - timedelta(days=2)
+            prev_period = timedelta(days=1)
         elif period == '30days':
             time_threshold = now() - timedelta(days=30)
+            prev_time_threshold = now() - timedelta(days=60)
+            prev_period = timedelta(days=30)
         elif period == '1year':
             time_threshold = now() - timedelta(days=365)
+            prev_time_threshold = now() - timedelta(days=730)
+            prev_period = timedelta(days=365)
         else:
             return Response({"error": "Invalid period"}, status=status.HTTP_400_BAD_REQUEST)
 
         crops = Crop.objects.filter(user_id=request.user.id)
         sales = Sales.objects.filter(crop__user__id=request.user.id, sale_date__gte=time_threshold)
+        prev_sales = Sales.objects.filter(crop__user__id=request.user.id, sale_date__gte=prev_time_threshold, sale_date__lt=time_threshold)
 
         # Total revenue and total sales for the time period
         total_revenue = sum(sale.price_at_sale for sale in sales)
         total_sales = sales.count()
+        prev_total_revenue = sum(sale.price_at_sale for sale in prev_sales)
+        prev_total_sales = prev_sales.count()
 
-        # Product listing with sales info
+        # Growth rates
+        def calc_growth(current, previous):
+            if previous == 0:
+                return 100.0 if current > 0 else 0.0
+            return ((current - previous) / previous) * 100
+        sales_growth = calc_growth(total_sales, prev_total_sales)
+        revenue_growth = calc_growth(total_revenue, prev_total_revenue)
+
+        # Product listing with sales info and per-product growth
         product_sales = []
         for crop in crops:
             crop_sales = sales.filter(crop=crop)
+            crop_prev_sales = prev_sales.filter(crop=crop)
             quantity_sold = sum(sale.quantity_sold for sale in crop_sales)
+            revenue = sum(sale.price_at_sale for sale in crop_sales)
+            prev_quantity_sold = sum(sale.quantity_sold for sale in crop_prev_sales)
+            prev_revenue = sum(sale.price_at_sale for sale in crop_prev_sales)
+            quantity_growth = calc_growth(quantity_sold, prev_quantity_sold)
+            revenue_growth_product = calc_growth(revenue, prev_revenue)
 
             # Calculate the total added quantity and total remaining quantity
             total_quantity_added = crop.quantity_added.aggregate(total=models.Sum('quantity'))['total'] or 0
@@ -256,11 +279,18 @@ class ProductSalesAnalysisView(APIView):
 
             product_sales.append({
                 "name": crop.name,
+                "image_url": crop.image_url,
+                "category": crop.category,
                 "quantity_listed": total_quantity_added,
                 "quantity_remaining": remaining_quantity,
                 "price": crop.price,
                 "quantity_sold": quantity_sold,
+                "revenue": revenue,
+                "quantity_growth": quantity_growth,
+                "revenue_growth": revenue_growth_product,
                 "created_at": crop.created_at,
+                "average_rating": crop.ratings.aggregate(models.Avg('rating'))['rating__avg'] or 0,
+                "number_of_ratings": crop.ratings.count(),
                 "sales": [
                     {
                         "quantity_sold": sale.quantity_sold,
@@ -271,10 +301,48 @@ class ProductSalesAnalysisView(APIView):
                 ],
             })
 
+        # Top Sellers (by quantity sold)
+        top_sellers = sorted(product_sales, key=lambda x: x['quantity_sold'], reverse=True)[:5]
+
+        # Inventory Breakdown by Category
+        from collections import defaultdict
+        inventory_by_category = defaultdict(int)
+        for crop in crops:
+            total_quantity_added = crop.quantity_added.aggregate(total=models.Sum('quantity'))['total'] or 0
+            quantity_sold = sum(sale.quantity_sold for sale in sales.filter(crop=crop))
+            remaining_quantity = total_quantity_added - quantity_sold
+            inventory_by_category[crop.category] += max(remaining_quantity, 0)
+        inventory_breakdown = [
+            {"category": cat, "quantity": qty} for cat, qty in inventory_by_category.items()
+        ]
+
+        # Recent Sales (last 10)
+        recent_sales_qs = sales.order_by('-sale_date')[:10]
+        recent_sales = [
+            {
+                "crop_name": sale.crop.name,
+                "crop_image_url": sale.crop.image_url,
+                "quantity_sold": sale.quantity_sold,
+                "price_at_sale": sale.price_at_sale,
+                "sale_date": sale.sale_date,
+                "buyer": {
+                    "id": sale.user.id,
+                    "name": sale.user.name,
+                    "email": sale.user.email,
+                }
+            }
+            for sale in recent_sales_qs
+        ]
+
         return Response({
             "total_revenue": total_revenue,
             "total_sales": total_sales,
+            "sales_growth": sales_growth,
+            "revenue_growth": revenue_growth,
             "product_sales": product_sales,
+            "top_sellers": top_sellers,
+            "inventory_breakdown": inventory_breakdown,
+            "recent_sales": recent_sales,
         })
 
 
